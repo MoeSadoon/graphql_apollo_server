@@ -19,6 +19,7 @@
     "esm": "^3.2.25",
     "express": "^4.17.1",
     "graphql": "^14.4.2",
+    "graphql-iso-date": "^3.6.1",
     "graphql-resolvers": "^0.3.3",
     "jsonwebtoken": "^8.5.1",
     "nodemon": "^1.19.1",

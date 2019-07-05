@@ -52,14 +52,14 @@ const eraseDatabaseOnSync = true;
 
 sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
   if(eraseDatabaseOnSync) {
-    createUsersWithMessages();
+    createUsersWithMessages(new Date());
   }
   app.listen({ port: 8000 }, () => {
     console.log('Apollo Server on http://localhost:8000/graphaql');
   });
 });
 
-const createUsersWithMessages = async () => {
+const createUsersWithMessages = async (date) => {
   await models.User.create(
     {
       username: 'Moe',
@@ -69,9 +69,11 @@ const createUsersWithMessages = async () => {
       messages: [
         {
           text: 'First seeded comment',
+          createdAt: date.setSeconds(date.getSeconds() + 1),
         },
         {
           text: 'Second seeded comment',
+          createdAt: date.setSeconds(date.getSeconds() + 1),
         },
       ],
     },
@@ -86,7 +88,9 @@ const createUsersWithMessages = async () => {
       email: 'joe@bloggs.com',
       password: 'password',
       messages: [
-        { text: 'Joe"s comment' },
+        { 
+          text: 'Joe"s comment',
+        },
       ],
     },
     {
