@@ -1,14 +1,12 @@
 const message = (sequelize, DataTypes) => {
-  const Message = sequelize('message', {
+  const Message = sequelize.define('message', {
     text: {
       type: DataTypes.STRING,
     },
   });
-
-  Message.associate = models => {
+  Message.associate = (models) => {
     Message.belongsTo(models.User);
   };
-
   return Message;
 };
 
