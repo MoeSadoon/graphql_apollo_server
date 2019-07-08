@@ -5,6 +5,20 @@ import typeDefs from './src/schema';
 import resolvers from './src/resolvers';
 import cors from 'cors';
 import models, { sequelize } from './src/models';
+import http from 'http';
+import DataLoader from 'dataloader';
+
+const batchUsers = async (keys, models) => {
+  const users = await models.User.findAll({
+    where: {
+      id: {
+        $in: keys,
+      },
+    },
+  });
+
+  return keys.map(key => users.find(user => user.id === key));
+};
 
 const app = express();
 
@@ -36,25 +50,36 @@ const server = new ApolloServer({
       message,
     };
   },
-  context: async ({ req }) => {
-    const me = await getMe(req);
-    return {
-      models,
-      me,
-      secret: process.env.SECRET,
-    };
+  context: async ({ req, connection }) => {
+    if (connection) {
+      return { models }
+    }
+    if (req) {
+      const me = await getMe(req);
+      return {
+        models,
+        me,
+        secret: process.env.SECRET,
+        loaders: {
+          user: new DataLoader(keys => batchUsers(keys, models)),
+        },
+      };
+    }
   },
 });
 
 server.applyMiddleware({ app, path: '/graphql'});
 
-const eraseDatabaseOnSync = true;
+const httpServer = http.createServer(app);
+server.installSubscriptionHandlers(httpServer);
 
-sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
-  if(eraseDatabaseOnSync) {
+const isTest = !!process.env.TEST_DATABASE;
+
+sequelize.sync({ force: isTest }).then(async () => {
+  if(isTest) {
     createUsersWithMessages(new Date());
   }
-  app.listen({ port: 8000 }, () => {
+  httpServer.listen({ port: 8000 }, () => {
     console.log('Apollo Server on http://localhost:8000/graphaql');
   });
 });
@@ -90,6 +115,24 @@ const createUsersWithMessages = async (date) => {
       messages: [
         { 
           text: 'Joe"s comment',
+          createdAt: date.setSeconds(date.getSeconds() + 1),
+        },
+      ],
+    },
+    {
+      include: [models.Message],
+    },
+  );
+
+  await models.User.create(
+    {
+      username: 'Jane',
+      email: 'jane@done.com',
+      password: 'password',
+      messages: [
+        { 
+          text: 'Janes"s comment',
+          createdAt: date.setSeconds(date.getSeconds() + 1),
         },
       ],
     },
